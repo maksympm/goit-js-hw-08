@@ -1,39 +1,42 @@
 import throttle from 'lodash.throttle';
 
-const refs = {
-  form: document.querySelector('.feedback-form'),
-  textarea: document.querySelector('.feedback-form textarea'),
-  email: document.querySelector('.feedback-form input'),
-};
+const localStorageKey = 'feedback-form-state';
 
-const STORAGE_KEY = 'feedback-form-state';
-let formData = {};
+const formEl = document.querySelector('.feedback-form');
+const inputEL = document.querySelector('.js-input');
+const messageEL = document.querySelector('.js-message');
 
-refs.form.addEventListener('submit', onFormSubmit);
-refs.form.addEventListener('input', throttle(onMessageInput, 500));
+formEl.addEventListener('input', throttle(handleSaveToLS, 500));
+const formState = {};
 
-populateTextarea();
-
-function onMessageInput(e) {
-  formData[e.target.name] = e.target.value;
-  const dataObj = JSON.stringify(formData);
-  localStorage.setItem(STORAGE_KEY, dataObj);
-}
-
-function onFormSubmit(e) {
-  e.preventDefault();
-
-  console.log(JSON.parse(localStorage.getItem(STORAGE_KEY)));
-  e.currentTarget.reset();
-  localStorage.removeItem(STORAGE_KEY);
-}
-
-function populateTextarea() {
-  const savedData = localStorage.getItem(STORAGE_KEY);
-  const parsedData = JSON.parse(savedData);
-  if (savedData) {
-    refs.textarea.value = parsedData.message;
-    refs.email.value = parsedData.email;
-    formData = parsedData;
+function handleSaveToLS(e) {
+  if (e.target.classList.contains('js-input')) {
+    formState.email = e.target.value;
   }
+  if (e.target.classList.contains('js-message')) {
+    formState.message = e.target.value;
+  }
+  localStorage.setItem(localStorageKey, JSON.stringify(formState));
+}
+
+const parsedLocalData = JSON.parse(localStorage.getItem(localStorageKey));
+
+if (parsedLocalData) {
+  inputEL.value = parsedLocalData.email || '';
+  messageEL.value = parsedLocalData.message || '';
+}
+
+formEl.addEventListener('submit', handleSubmit);
+
+function handleSubmit(e) {
+  e.preventDefault();
+  if (inputEL.value === '' || messageEL.value === '') {
+    return alert('Всі поля повинні бути заповнені.');
+  }
+  console.log(formState);
+  inputEL.value = '';
+  messageEL.value = '';
+  formState.email = '';
+  formState.message = '';
+  localStorage.clear();
 }
